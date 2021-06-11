@@ -142,7 +142,7 @@ macro_rules! match_sum_res {
 
 /// The kind of types which represent natural numbers.
 ///
-/// Example: the number `2` is represented by the type [`Succ`]`<`[`Succ`]`<`[`Zero`]`>>`.
+/// Example: the number `2` is represented by the type `Succ<Succ<Zero>>`.
 pub trait Nat {}
 
 /// Type representing the natural number `0`.
@@ -158,7 +158,8 @@ impl<N: Nat> Nat for Succ<N> {}
 
 /// The kind of types which represent lists of natural numbers.
 ///
-/// Example: the list `[0, 1, 0]` is represented by the type `Cons<Zero, Cons<Succ<Zero>, Cons<Zero, Nil>>>`.
+/// Example: the list `[0, 1, 0]` is represented by the type
+/// `Cons<Zero, Cons<Succ<Zero>, Cons<Zero, Nil>>>`.
 pub trait Nats {}
 
 /// Type representing the empty list.
@@ -175,7 +176,8 @@ impl<Ns: Nats, N: Nat> Nats for Cons<N, Ns> {}
 
 // Has /////////////////////////////////////////////////////////////////////////
 
-/// Types which behave like an enum whose `N`-th constructor contains type `T`.
+/// `Has<T, N>` describes types which behave like an enum whose `N`-th
+/// constructor contains type `T`.
 /// If there is only one constructor of type `T`, then the compiler can infer
 /// the `N`.
 pub trait Has<T, N: Nat> {

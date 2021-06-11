@@ -46,10 +46,6 @@ pub enum Void {}
 
 pub use Sum::{Here, There};
 
-pub trait HSum {}
-impl HSum for Void {}
-impl<T, TS: HSum> HSum for Sum<T, TS> {}
-
 // Macros //////////////////////////////////////////////////////////////////////
 
 pub trait HTrue {}
@@ -132,7 +128,7 @@ impl<Ns: Nats, N: Nat> Nats for Cons<N, Ns> {}
 /// Types which behave like an enum whose `N`-th constructor contains type `T`.
 /// If there is only one constructor of type `T`, then the compiler can infer
 /// the `N`.
-pub trait Has<T, N: Nat>: HSum {
+pub trait Has<T, N: Nat> {
     /// A type which has all the constructors of `Self` except the one for `T`.
     type WithoutT;
     /// Inject a `T` into `Self` by using its constructor.
@@ -157,7 +153,7 @@ pub fn matches<T, TS: Has<T, impl Nat>>(ts: TS) -> Result<T, TS::WithoutT> {
 }
 
 /// If `T` is the first constructor of `Self`.
-impl<T, TS: HSum> Has<T, Zero> for Sum<T, TS> {
+impl<T, TS> Has<T, Zero> for Sum<T, TS> {
     type WithoutT = TS;
     fn inject(t: T) -> Self {
         Here(t)
@@ -194,13 +190,13 @@ impl<T, U, TS: Has<T, N>, N: Nat> Has<T, Succ<N>> for Sum<U, TS> {
 /// constructor from `Self` at which index the corresponding constructor in `TS` is.
 ///
 /// `Ns` is inferred by the compiler, if the constructor types are unique.
-pub trait EmbedTo<TS, Ns: Nats>: HSum {
+pub trait EmbedTo<TS, Ns: Nats> {
     fn embed(self) -> TS;
 }
 
 /// Recursive case: Try to embed the first constructor from `Self` otherwise
 /// recursively embed the rest.
-impl<T, N: Nat, NS: Nats, TS: HSum + EmbedTo<US, NS>, US: Has<T, N>> EmbedTo<US, Cons<N, NS>> for Sum<T, TS> {
+impl<T, N: Nat, NS: Nats, TS: EmbedTo<US, NS>, US: Has<T, N>> EmbedTo<US, Cons<N, NS>> for Sum<T, TS> {
     fn embed(self) -> US {
         match self {
             Here(t) => inject(t),

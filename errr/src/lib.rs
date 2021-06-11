@@ -48,6 +48,16 @@ pub use Sum::{Here, There};
 
 // Macros //////////////////////////////////////////////////////////////////////
 
+/// Nicer syntax to write down nested [`enum@Sum`]-types.
+///
+/// The macro invocation
+/// ```
+/// Sum!(A, B, C);
+/// ```
+/// expands to
+/// ```
+/// Sum<A, Sum<B, Sum<C, Void>>>;
+/// ```
 #[macro_export]
 macro_rules! Sum {
     ($t:ty , $($ts:tt)*) => {Sum<$t, Sum!($($ts)*)>};
@@ -55,6 +65,26 @@ macro_rules! Sum {
     () => {Void};
 }
 
+/// Nicer syntax to match on nested sum types.
+///
+/// The macro invocation
+/// ```
+/// let e: Sum!(u64, f32, bool);
+/// match_sum_inner!(e => {
+///     42 => {},
+///     5.2 => {},
+///     true => {},
+/// });
+/// ```
+/// expands to
+/// ```
+/// let e: Sum!(u64, f32, bool);
+/// match e {
+///     Here(42) => {},
+///     There(Here(5.2)) => {},
+///     There(There(Here(true))) => {},
+/// };
+/// ```
 #[macro_export]
 macro_rules! match_sum_inner {
     ( ($e:expr) { $pat:pat => { $($body:tt)* } $($rest:tt)* } ) => {
@@ -68,6 +98,27 @@ macro_rules! match_sum_inner {
     }
 }
 
+/// Nicer syntax to match on polymorphic variants.
+///
+/// This is similar to [`match_sum_inner!`] but converts the polymorphic variant to a [`Sum!`] based on the patterns of the match arms:
+///
+/// The macro invocation
+/// ```
+/// match_sum!(e => {
+///     ErrA(a) => {},
+///     ErrB(b) => {},
+///     ErrC(c) => {},
+/// });
+/// ```
+/// expands to
+/// ```
+/// let e: Sum!(ErrA, ErrB, ErrC) = e;
+/// match e {
+///     Here(ErrA(a)) => {},
+///     There(Here(ErrB(b))) => {},
+///     There(There(Here(ErrC(c)))) => {},
+/// };
+/// ```
 #[macro_export]
 macro_rules! match_sum {
     ( $e:expr => { $( $err:ident($pat:pat) => { $($body:tt)* } )* } ) => {{
@@ -76,6 +127,7 @@ macro_rules! match_sum {
     }}
 }
 
+/// Nicer syntax to match on a [`Result<T, E>`] where `E` is a polymorphic variant.
 #[macro_export]
 macro_rules! match_sum_res {
     ( $e:expr => { Ok($p:pat) => { $($body:tt)* } $($rest:tt)* } ) => {{

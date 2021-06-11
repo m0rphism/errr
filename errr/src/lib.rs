@@ -52,11 +52,11 @@ pub use Sum::{Here, There};
 ///
 /// The macro invocation
 /// ```
-/// Sum!(A, B, C);
+/// Sum!(A, B, C)
 /// ```
 /// expands to
 /// ```
-/// Sum<A, Sum<B, Sum<C, Void>>>;
+/// Sum<A, Sum<B, Sum<C, Void>>>
 /// ```
 #[macro_export]
 macro_rules! Sum {

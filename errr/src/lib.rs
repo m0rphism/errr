@@ -141,6 +141,8 @@ macro_rules! match_sum_res {
 // Nats ////////////////////////////////////////////////////////////////////////
 
 /// The kind of types which represent natural numbers.
+///
+/// Example: the number `2` is represented by the type [`Succ`]`<`[`Succ`]`<`[`Zero`]`>>`.
 pub trait Nat {}
 
 /// Type representing the natural number `0`.
@@ -155,6 +157,8 @@ impl Nat for Zero {}
 impl<N: Nat> Nat for Succ<N> {}
 
 /// The kind of types which represent lists of natural numbers.
+///
+/// Example: the list `[0, 1, 0]` is represented by the type `Cons<Zero, Cons<Succ<Zero>, Cons<Zero, Nil>>>`.
 pub trait Nats {}
 
 /// Type representing the empty list.
@@ -184,14 +188,14 @@ pub trait Has<T, N: Nat> {
     fn pull_out(self) -> Sum<T, Self::WithoutT>;
 }
 
-/// Inject a `T` into `TS` by using its constructor.
-pub fn inject<T, TS: Has<T, impl Nat>>(t: T) -> TS {
-    TS::inject(t)
+/// Inject a `T` into `Ts` by using its constructor.
+pub fn inject<T, Ts: Has<T, impl Nat>>(t: T) -> Ts {
+    Ts::inject(t)
 }
 
 /// Match on `Self` and return either a `T` or a value of an enum which
 /// could be any other constructor of `Self` except for `T`.
-pub fn matches<T, TS: Has<T, impl Nat>>(ts: TS) -> Result<T, TS::WithoutT> {
+pub fn matches<T, Ts: Has<T, impl Nat>>(ts: Ts) -> Result<T, Ts::WithoutT> {
     match ts.pull_out() {
         Here(t) => Ok(t),
         There(ts) => Err(ts),
@@ -199,8 +203,8 @@ pub fn matches<T, TS: Has<T, impl Nat>>(ts: TS) -> Result<T, TS::WithoutT> {
 }
 
 /// If `T` is the first constructor of `Self`.
-impl<T, TS> Has<T, Zero> for Sum<T, TS> {
-    type WithoutT = TS;
+impl<T, Ts> Has<T, Zero> for Sum<T, Ts> {
+    type WithoutT = Ts;
     fn inject(t: T) -> Self {
         Here(t)
     }
@@ -210,10 +214,10 @@ impl<T, TS> Has<T, Zero> for Sum<T, TS> {
 }
 
 /// If `T` is not the first constructor of `Self`.
-impl<T, U, TS: Has<T, N>, N: Nat> Has<T, Succ<N>> for Sum<U, TS> {
-    type WithoutT = Sum<U, TS::WithoutT>;
+impl<T, U, Ts: Has<T, N>, N: Nat> Has<T, Succ<N>> for Sum<U, Ts> {
+    type WithoutT = Sum<U, Ts::WithoutT>;
     fn inject(t: T) -> Self {
-        There(TS::inject(t))
+        There(Ts::inject(t))
     }
 
     fn pull_out(self) -> Sum<T, Self::WithoutT> {
@@ -230,21 +234,21 @@ impl<T, U, TS: Has<T, N>, N: Nat> Has<T, Succ<N>> for Sum<U, TS> {
 // EmbedTo /////////////////////////////////////////////////////////////////////
 
 /// If we have some enum `Self`, which has a subset of the constructors of some
-/// enum `TS`, then we can convert `Self` to `TS`.
+/// enum `Ts`, then we can convert `Self` to `Ts`.
 ///
 /// `Ns` is a list of type level natural numbers, which describes for each
-/// constructor from `Self` at which index the corresponding constructor in `TS` is.
+/// constructor from `Self` at which index the corresponding constructor in `Ts` is.
 ///
 /// `Ns` is inferred by the compiler, if the constructor types are unique.
-pub trait EmbedTo<TS, Ns: Nats> {
-    /// Embed the constructors from `Self` into `TS`.
-    fn embed(self) -> TS;
+pub trait EmbedTo<Ts, Ns: Nats> {
+    /// Embed the constructors from `Self` into `Ts`.
+    fn embed(self) -> Ts;
 }
 
 /// Recursive case: Try to embed the first constructor from `Self` otherwise
 /// recursively embed the rest.
-impl<T, N: Nat, NS: Nats, TS: EmbedTo<US, NS>, US: Has<T, N>> EmbedTo<US, Cons<N, NS>> for Sum<T, TS> {
-    fn embed(self) -> US {
+impl<T, N: Nat, Ns: Nats, Ts: EmbedTo<Us, Ns>, Us: Has<T, N>> EmbedTo<Us, Cons<N, Ns>> for Sum<T, Ts> {
+    fn embed(self) -> Us {
         match self {
             Here(t) => inject(t),
             There(ts) => ts.embed(),
@@ -253,15 +257,15 @@ impl<T, N: Nat, NS: Nats, TS: EmbedTo<US, NS>, US: Has<T, N>> EmbedTo<US, Cons<N
 }
 
 /// Base case: If all constructors are embedded, then the recursion stops.
-impl<US> EmbedTo<US, Nil> for Void {
-    fn embed(self) -> US {
+impl<Us> EmbedTo<Us, Nil> for Void {
+    fn embed(self) -> Us {
         match self {}
     }
 }
 
-/// Embed the constructors from `US` into `TS`.
-pub fn embed<TS, US: EmbedTo<TS, impl Nats>>(us: US) -> TS {
-    US::embed(us)
+/// Embed the constructors from `Us` into `Ts`.
+pub fn embed<Ts, Us: EmbedTo<Ts, impl Nats>>(us: Us) -> Ts {
+    Us::embed(us)
 }
 
 #[cfg(test)]

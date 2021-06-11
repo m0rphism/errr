@@ -86,6 +86,7 @@ mod test2 {
         Ok(())
     }
 
+    // Matching complains if we miss a case!
     fn handle_f_abc_3() {
         let res: Result<(), Sum!(ErrA, ErrB, ErrC)> = f_abc();
         match res {
@@ -99,13 +100,15 @@ mod test2 {
         }
     }
 
+    // We can also match on a single error and if the match fails,
+    // we get a smaller error type to rethrow.
     fn handle_f_abc_4() {
         let res: Result<(), Sum!(ErrA, ErrB, ErrC)> = f_abc();
         match res {
             Ok(()) => (),
             Err(e) => match matches(e) {
-                Ok(ErrA(_s)) => todo!(),
-                Err(_e) => todo!(),
+                Ok(ErrA(_err_a)) => todo!(),
+                Err(_err_bc) => todo!(),
             },
         }
     }

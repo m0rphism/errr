@@ -187,7 +187,71 @@ mod test3 {
 
 }
 
+mod test4 {
+    use super::*;
+
+    #[errr]
+    fn f_a() -> Result<(), Errors<ErrA>> {
+        Ok(())
+    }
+
+    #[errr]
+    fn f_b() -> Result<(), Errors<ErrB>> {
+        Ok(())
+    }
+
+    #[errr]
+    fn f_c() -> Result<(), Errors<ErrC>> {
+        Ok(())
+    }
+
+    #[errr]
+    fn f_d() -> Result<(), Errors<ErrD>> {
+        Ok(())
+    }
+
+    #[errr]
+    fn f_ab_1() -> Result<(), Errors<ErrA, ErrB>> {
+        f_a()?;
+        f_b()?;
+        Ok(())
+    }
+
+    #[errr]
+    fn f_ab_2() -> Result<(), Errors<ErrD, ErrB, ErrA, ErrC>> {
+        f_a()?;
+        f_b()?;
+        Ok(())
+    }
+
+    #[errr]
+    fn f_abc_1() -> Result<(), Errors<ErrA, ErrB, ErrC>> {
+        f_ab_1()?;
+        f_c()?;
+        Ok(())
+    }
+
+    fn handle_f_abc() {
+        match f_abc_1() {
+            Ok(()) => (),
+            Err(e) => hmatch!(e => {
+                ErrA(e) => { println!("ErrA: {}", e) }
+                ErrB(e) => { println!("ErrB: {}", e) }
+                ErrC(e) => { println!("ErrC: {}", e) }
+            })
+        }
+    }
+
+    fn handle_f_abc_2() {
+        hmatch_res!(f_abc_1() => {
+            Ok(()) => {}
+            ErrA(e) => { println!("ErrA: {}", e) }
+            ErrB(e) => { println!("ErrB: {}", e) }
+            ErrC(e) => { println!("ErrC: {}", e) }
+        })
+    }
+}
+
 fn main() {
     println!("Hello, world!");
 }
-

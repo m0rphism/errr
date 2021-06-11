@@ -1,4 +1,4 @@
-use errr_proc::*;
+pub use errr_proc::*;
 
 // TODO: give a way to define/derive HSum/Has/Embed instances for real enums. This can be usefull at api boundaries.
 

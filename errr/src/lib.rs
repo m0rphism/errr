@@ -65,7 +65,7 @@ macro_rules! Sum {
     () => {Void};
 }
 
-/// Nicer syntax to match on nested [`enum@Sum`] types.
+/// Nicer syntax to match on values of nested [`enum@Sum`] types.
 ///
 /// The macro invocation
 /// ```
@@ -98,8 +98,9 @@ macro_rules! match_sum_inner {
     }
 }
 
-/// Nicer syntax to match on polymorphic variants, i.e. things which implement
-/// `Has<T1, N1> + ... + Has<Tn, Nn>`.
+/// Nicer syntax to match on values of types, which implement
+/// `Has<T1, N1> + ... + Has<Tn, Nn>`, by first converting them to
+/// `Sum!(T1, ..., Tn)`.
 ///
 /// This is similar to [`match_sum_inner!`] but converts the polymorphic variant
 /// to a [`Sum!`] based on the patterns of the match arms:
@@ -129,7 +130,7 @@ macro_rules! match_sum {
     }}
 }
 
-/// Nicer syntax to match on a [`Result<T, E>`] where `E` is a polymorphic variant.
+/// Nicer syntax to match on a [`Result<T, E>`] value where `E` is a polymorphic variant.
 #[macro_export]
 macro_rules! match_sum_res {
     ( $e:expr => { Ok($p:pat) => { $($body:tt)* } $($rest:tt)* } ) => {{

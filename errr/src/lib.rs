@@ -164,7 +164,7 @@ pub trait Nats {}
 /// Type representing the empty list.
 pub struct Nil {}
 
-/// Type representing the a list of natural numbers `Ns` with an additional number `N`.
+/// Type representing a list of natural numbers `Ns` with an additional number `N`.
 pub struct Cons<N: Nat, Ns: Nats> {
     phantom_n: std::marker::PhantomData<N>,
     phantom_ns: std::marker::PhantomData<Ns>,

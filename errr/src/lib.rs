@@ -98,9 +98,11 @@ macro_rules! match_sum_inner {
     }
 }
 
-/// Nicer syntax to match on polymorphic variants.
+/// Nicer syntax to match on polymorphic variants, i.e. things which implement
+/// `Has<T1, N1> + ... + Has<Tn, Nn>`.
 ///
-/// This is similar to [`match_sum_inner!`] but converts the polymorphic variant to a [`Sum!`] based on the patterns of the match arms:
+/// This is similar to [`match_sum_inner!`] but converts the polymorphic variant
+/// to a [`Sum!`] based on the patterns of the match arms:
 ///
 /// The macro invocation
 /// ```

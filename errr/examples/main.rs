@@ -39,9 +39,18 @@ mod test1 {
         f_b().map_err(inject)?;
         Ok(())
     }
+
+    // Deeper nesting requires embedding, because we always chose a concrete
+    // Error type via `Sum!`.
+    fn f_abc() -> Result<(), Sum!(ErrA, ErrB, ErrC)> {
+        f_ab_1().map_err(embed)?;
+        f_c().map_err(inject)?;
+        Ok(())
+    }
 }
 
 /// Automatic composition via polymorphism over error type E.
+/// No embedding required.
 mod test2 {
     use super::*;
 
@@ -103,7 +112,7 @@ mod test2 {
 }
 
 /// Hiding Details behind macros.
-mod test4 {
+mod test3 {
     use super::*;
 
     #[errr]

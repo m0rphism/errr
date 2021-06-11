@@ -198,6 +198,10 @@ impl<US> EmbedTo<US, Nil> for Void {
     }
 }
 
+pub fn embed<TS, US: EmbedTo<TS, impl Nats>>(us: US) -> TS {
+    US::embed(us)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

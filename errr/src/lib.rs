@@ -56,11 +56,11 @@ macro_rules! Sum {
 }
 
 #[macro_export]
-macro_rules! hmatch_inner {
+macro_rules! match_sum_inner {
     ( ($e:expr) { $pat:pat => { $($body:tt)* } $($rest:tt)* } ) => {
         match matches($e) {
             Ok($pat) => { $($body)* }
-            Err(rest) => { hmatch_inner!((rest) { $($rest)* }) }
+            Err(rest) => { match_sum_inner!((rest) { $($rest)* }) }
         }
     };
     ( ($e:expr) { } ) => {
@@ -69,19 +69,19 @@ macro_rules! hmatch_inner {
 }
 
 #[macro_export]
-macro_rules! hmatch {
+macro_rules! match_sum {
     ( $e:expr => { $( $err:ident($pat:pat) => { $($body:tt)* } )* } ) => {{
         let e: Sum!($($err),*) = $e;
-        hmatch_inner!((e) { $( $err($pat) => { $($body)* } )* })
+        match_sum_inner!((e) { $( $err($pat) => { $($body)* } )* })
     }}
 }
 
 #[macro_export]
-macro_rules! hmatch_res {
+macro_rules! match_sum_res {
     ( $e:expr => { Ok($p:pat) => { $($body:tt)* } $($rest:tt)* } ) => {{
         match $e {
             Ok($p) => { $($body)* }
-            Err(e) => hmatch!(e => { $($rest)* })
+            Err(e) => match_sum!(e => { $($rest)* })
         }
     }}
 }

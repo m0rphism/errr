@@ -170,7 +170,7 @@ mod test3 {
     fn handle_f_abc() {
         match f_abc() {
             Ok(()) => (),
-            Err(e) => hmatch!(e => {
+            Err(e) => match_sum!(e => {
                 ErrA(e) => { println!("ErrA: {}", e) }
                 ErrB(e) => { println!("ErrB: {}", e) }
                 ErrC(e) => { println!("ErrC: {}", e) }
@@ -179,7 +179,7 @@ mod test3 {
     }
 
     fn handle_f_abc_2() {
-        hmatch_res!(f_abc() => {
+        match_sum_res!(f_abc() => {
             Ok(()) => {}
             ErrA(e) => { println!("ErrA: {}", e) }
             ErrB(e) => { println!("ErrB: {}", e) }

@@ -65,7 +65,7 @@ macro_rules! Sum {
     () => {Void};
 }
 
-/// Nicer syntax to match on nested sum types.
+/// Nicer syntax to match on nested [`enum@Sum`] types.
 ///
 /// The macro invocation
 /// ```

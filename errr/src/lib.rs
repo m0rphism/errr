@@ -4,7 +4,7 @@ pub use errr_proc::*;
 
 /// A Sum-Type like [`Result`], but with different names.
 ///
-/// We can encode an arbitrary enum as a nested [`Sum`], e.g.
+/// We can encode an arbitrary enum as a nested [`enum@Sum`], e.g.
 /// ```
 /// enum SomeError {
 ///     ErrorA(u64),
@@ -17,7 +17,7 @@ pub use errr_proc::*;
 /// type SumError = Sum<u64, Sum<String, Sum<f32, Void>>>;
 /// ```
 /// The constructor names reflect that we encode enums always as a list and never as a real tree, i.e.
-/// if we nest a [`Sum`] inside a [`Sum`] it always fills the right parameter `B` and never the left parameter `A`.
+/// if we nest a [`enum@Sum`] inside a [`enum@Sum`] it always fills the right parameter `B` and never the left parameter `A`.
 /// For example, if we construct a value of type `SumError`, then the number of `There` constructors is the index in the type-level list:
 /// ```
 /// let err_a: SumError = Here(42);                    // Index 0: u64
@@ -25,7 +25,7 @@ pub use errr_proc::*;
 /// let err_c: SumError = There(There(Here(5.2)));     // Index 2: f32
 /// ```
 ///
-/// The [`Sum!`] macro gives more readable syntax to write down nested [`Sum`]-Types:
+/// The [`Sum!`] macro gives more readable syntax to write down nested [`enum@Sum`]-Types:
 /// ```
 /// type SumError = Sum!(u64, String, f32);
 /// ```
@@ -37,8 +37,8 @@ pub enum Sum<A, B> {
 
 /// A type with no elements.
 ///
-/// This acts as a neutral element to [`Sum`]:
-/// The type [`Sum`]`<A, `[`Void`]`>` is isomorphic to `A`, i.e. while both types have different internal structure,
+/// This acts as a neutral element to [`enum@Sum`]:
+/// The type [`enum@Sum`]`<A, `[`Void`]`>` is isomorphic to `A`, i.e. while both types have different internal structure,
 /// they have the same number of elements with the same meaning and behave the
 /// same for all things we're interested in.
 #[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]

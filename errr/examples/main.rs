@@ -7,6 +7,7 @@ struct ErrB(String);
 struct ErrC(String);
 struct ErrD(String);
 
+/// Explicit
 mod test1 {
     use super::*;
 
@@ -26,31 +27,21 @@ mod test1 {
         Ok(())
     }
 
-    fn f_ab_0() -> Result<(), HSum!(ErrA, ErrB)> {
-        f_a().map_err(inject)?;
-        f_b().map_err(inject)?;
-        Ok(())
-    }
-
     fn f_ab_1() -> Result<(), HSum!(ErrA, ErrB)> {
         f_a().map_err(inject)?;
         f_b().map_err(inject)?;
         Ok(())
     }
 
+    // Stuff still works if we use an error type with more possibilities.
     fn f_ab_2() -> Result<(), HSum!(ErrD, ErrB, ErrA, ErrC)> {
-        f_a().map_err(inject)?;
-        f_b().map_err(inject)?;
-        Ok(())
-    }
-
-    fn f_ab_3<M: Nat, N: Nat, E: Has<ErrA, M> + Has<ErrB, N>>() -> Result<(), E> {
         f_a().map_err(inject)?;
         f_b().map_err(inject)?;
         Ok(())
     }
 }
 
+/// Automatic composition via polymorphism over error type E.
 mod test2 {
     use super::*;
 
@@ -74,38 +65,20 @@ mod test2 {
         Ok(())
     }
 
-    fn f_ab_1() -> Result<(), HSum!(ErrA, ErrB)> {
+    fn f_ab<E: Has<ErrA, impl Nat> + Has<ErrB, impl Nat>>() -> Result<(), E> {
         f_a()?;
         f_b()?;
         Ok(())
     }
 
-    fn f_ab_2() -> Result<(), HSum!(ErrD, ErrB, ErrA, ErrC)> {
-        f_a()?;
-        f_b()?;
-        Ok(())
-    }
-
-    fn f_ab_3<E: Has<ErrA, impl Nat> + Has<ErrB, impl Nat>>() -> Result<(), E> {
-        f_a()?;
-        f_b()?;
-        Ok(())
-    }
-
-    fn f_abc_1() -> Result<(), HSum!(ErrA, ErrB, ErrC)> {
-        f_ab_3()?;
-        f_c()?;
-        Ok(())
-    }
-
-    fn f_abc_3<E: Has<ErrA, impl Nat> + Has<ErrB, impl Nat> + Has<ErrC, impl Nat>>() -> Result<(), E> {
-        f_ab_3()?;
+    fn f_abc<E: Has<ErrA, impl Nat> + Has<ErrB, impl Nat> + Has<ErrC, impl Nat>>() -> Result<(), E> {
+        f_ab()?;
         f_c()?;
         Ok(())
     }
 
     fn handle_f_abc_3() {
-        let res: Result<(), HSum!(ErrA, ErrB, ErrC)> = f_abc_3();
+        let res: Result<(), HSum!(ErrA, ErrB, ErrC)> = f_abc();
         match res {
             Ok(()) => (),
             Err(e) => match e {
@@ -118,7 +91,7 @@ mod test2 {
     }
 
     fn handle_f_abc_4() {
-        let res: Result<(), HSum!(ErrA, ErrB, ErrC)> = f_abc_3();
+        let res: Result<(), HSum!(ErrA, ErrB, ErrC)> = f_abc();
         match res {
             Ok(()) => (),
             Err(e) => match matches(e) {
@@ -129,6 +102,7 @@ mod test2 {
     }
 }
 
+/// Hiding Details behind macro rules.
 mod test3 {
     use super::*;
 
@@ -146,27 +120,21 @@ mod test3 {
             Ok(())
         }
 
-        fn f_ab_1() -> Result<(), Errors<ErrA, ErrB>> {
+        fn f_ab() -> Result<(), Errors<ErrA, ErrB>> {
             f_a()?;
             f_b()?;
             Ok(())
         }
 
-        fn f_ab_2() -> Result<(), Errors<ErrD, ErrB, ErrA, ErrC>> {
-            f_a()?;
-            f_b()?;
-            Ok(())
-        }
-
-        fn f_abc_1() -> Result<(), Errors<ErrA, ErrB, ErrC>> {
-            f_ab_1()?;
+        fn f_abc() -> Result<(), Errors<ErrA, ErrB, ErrC>> {
+            f_ab()?;
             f_c()?;
             Ok(())
         }
     }
 
     fn handle_f_abc() {
-        match f_abc_1() {
+        match f_abc() {
             Ok(()) => (),
             Err(e) => hmatch!(e => {
                 ErrA(e) => { println!("ErrA: {}", e) }
@@ -177,7 +145,7 @@ mod test3 {
     }
 
     fn handle_f_abc_2() {
-        hmatch_res!(f_abc_1() => {
+        hmatch_res!(f_abc() => {
             Ok(()) => {}
             ErrA(e) => { println!("ErrA: {}", e) }
             ErrB(e) => { println!("ErrB: {}", e) }
@@ -187,6 +155,7 @@ mod test3 {
 
 }
 
+/// Hiding Details behind proc macro.
 mod test4 {
     use super::*;
 
@@ -211,28 +180,36 @@ mod test4 {
     }
 
     #[errr]
-    fn f_ab_1() -> Result<(), Errors<ErrA, ErrB>> {
+    fn f_ab() -> Result<(), Errors<ErrA, ErrB>> {
         f_a()?;
         f_b()?;
         Ok(())
     }
 
     #[errr]
-    fn f_ab_2() -> Result<(), Errors<ErrD, ErrB, ErrA, ErrC>> {
-        f_a()?;
+    fn f_bc() -> Result<(), Errors<ErrB, ErrC>> {
         f_b()?;
-        Ok(())
-    }
-
-    #[errr]
-    fn f_abc_1() -> Result<(), Errors<ErrA, ErrB, ErrC>> {
-        f_ab_1()?;
         f_c()?;
         Ok(())
     }
 
+    #[errr]
+    fn f_abc() -> Result<(), Errors<ErrA, ErrB, ErrC>> {
+        f_ab()?;
+        f_bc()?;
+        Ok(())
+    }
+
+    // Macro still works if we add our own generics.
+    #[errr]
+    fn f_abC<C>(c: C) -> Result<(), Errors<ErrA, ErrB, C>> {
+        f_ab()?;
+        Err(inject(c))?;
+        Ok(())
+    }
+
     fn handle_f_abc() {
-        match f_abc_1() {
+        match f_abc() {
             Ok(()) => (),
             Err(e) => hmatch!(e => {
                 ErrA(e) => { println!("ErrA: {}", e) }
@@ -243,7 +220,7 @@ mod test4 {
     }
 
     fn handle_f_abc_2() {
-        hmatch_res!(f_abc_1() => {
+        hmatch_res!(f_abc() => {
             Ok(()) => {}
             ErrA(e) => { println!("ErrA: {}", e) }
             ErrB(e) => { println!("ErrB: {}", e) }

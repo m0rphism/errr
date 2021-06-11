@@ -67,6 +67,9 @@ pub fn errr(_attr: TokenStream, item: TokenStream) -> TokenStream {
         eq_token: None,
         default: None,
     });
+    if !g.sig.generics.params.is_empty() && !g.sig.generics.params.trailing_punct() {
+        g.sig.generics.params.push_punct(parse_quote!(,))
+    }
     g.sig.generics.params.push_value(bound);
     g.sig.output = parse_quote!(-> Result<#ok_type, #err_ident>);
 

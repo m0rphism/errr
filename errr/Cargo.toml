@@ -1,0 +1,7 @@
+[package]
+name = "errr"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+errr_proc = { path = "../errr_proc" }

@@ -1,3 +1,5 @@
+use errr_proc::*;
+
 // TODO: give a way to define/derive HSum/Has/Embed instances for real enums. This can be usefull at api boundaries.
 
 /// A Sum-Type like [`Result`], but with different names.
@@ -71,6 +73,7 @@ macro_rules! HFun {
     }
 }
 
+#[macro_export]
 macro_rules! hmatch_inner {
     ( ($e:expr) { $pat:pat => { $($body:tt)* } $($rest:tt)* } ) => {
         match matches($e) {

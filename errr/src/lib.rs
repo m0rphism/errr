@@ -127,18 +127,28 @@ pub struct Cons<N: Nat, Ns: Nats> {
 impl Nats for Nil {}
 impl<Ns: Nats, N: Nat> Nats for Cons<N, Ns> {}
 
-// HHas ////////////////////////////////////////////////////////////////////////
+// Has /////////////////////////////////////////////////////////////////////////
 
+/// Types which behave like an enum whose `N`-th constructor contains type `T`.
+/// If there is only one constructor of type `T`, then the compiler can infer
+/// the `N`.
 pub trait Has<T, N: Nat>: HSum {
+    /// A type which has all the constructors of `Self` except the one for `T`.
     type WithoutT;
+    /// Inject a `T` into `Self` by using its constructor.
     fn inject(t: T) -> Self;
+    /// Match on `Self` and return either a `T` or a value of an enum which
+    /// could be any other constructor of `Self` except for `T`.
     fn pull_out(self) -> Sum<T, Self::WithoutT>;
 }
 
+/// Inject a `T` into `TS` by using its constructor.
 pub fn inject<T, TS: Has<T, impl Nat>>(t: T) -> TS {
     TS::inject(t)
 }
 
+/// Match on `Self` and return either a `T` or a value of an enum which
+/// could be any other constructor of `Self` except for `T`.
 pub fn matches<T, TS: Has<T, impl Nat>>(ts: TS) -> Result<T, TS::WithoutT> {
     match ts.pull_out() {
         Here(t) => Ok(t),
@@ -146,6 +156,7 @@ pub fn matches<T, TS: Has<T, impl Nat>>(ts: TS) -> Result<T, TS::WithoutT> {
     }
 }
 
+/// If `T` is the first constructor of `Self`.
 impl<T, TS: HSum> Has<T, Zero> for Sum<T, TS> {
     type WithoutT = TS;
     fn inject(t: T) -> Self {
@@ -156,6 +167,7 @@ impl<T, TS: HSum> Has<T, Zero> for Sum<T, TS> {
     }
 }
 
+/// If `T` is not the first constructor of `Self`.
 impl<T, U, TS: Has<T, N>, N: Nat> Has<T, Succ<N>> for Sum<U, TS> {
     type WithoutT = Sum<U, TS::WithoutT>;
     fn inject(t: T) -> Self {
@@ -175,10 +187,19 @@ impl<T, U, TS: Has<T, N>, N: Nat> Has<T, Succ<N>> for Sum<U, TS> {
 
 // EmbedTo /////////////////////////////////////////////////////////////////////
 
+/// If we have some enum `Self`, which has a subset of the constructors of some
+/// enum `TS`, then we can convert `Self` to `TS`.
+///
+/// `Ns` is a list of type level natural numbers, which describes for each
+/// constructor from `Self` at which index the corresponding constructor in `TS` is.
+///
+/// `Ns` is inferred by the compiler, if the constructor types are unique.
 pub trait EmbedTo<TS, Ns: Nats>: HSum {
     fn embed(self) -> TS;
 }
 
+/// Recursive case: Try to embed the first constructor from `Self` otherwise
+/// recursively embed the rest.
 impl<T, N: Nat, NS: Nats, TS: HSum + EmbedTo<US, NS>, US: Has<T, N>> EmbedTo<US, Cons<N, NS>> for Sum<T, TS> {
     fn embed(self) -> US {
         match self {
@@ -188,12 +209,12 @@ impl<T, N: Nat, NS: Nats, TS: HSum + EmbedTo<US, NS>, US: Has<T, N>> EmbedTo<US,
     }
 }
 
+/// Base case: If all constructors are embedded, then the recursion stops.
 impl<US> EmbedTo<US, Nil> for Void {
     fn embed(self) -> US {
         match self {}
     }
 }
-
 
 #[cfg(test)]
 mod tests {

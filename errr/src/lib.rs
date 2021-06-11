@@ -140,9 +140,13 @@ macro_rules! match_sum_res {
 
 // Nats ////////////////////////////////////////////////////////////////////////
 
+/// The kind of types which represent natural numbers.
 pub trait Nat {}
 
+/// Type representing the natural number `0`.
 pub struct Zero {}
+
+/// Type representing the successor of a natural number `N`, i.e. `N + 1`.
 pub struct Succ<N: Nat> {
     phantom: std::marker::PhantomData<N>,
 }
@@ -150,9 +154,13 @@ pub struct Succ<N: Nat> {
 impl Nat for Zero {}
 impl<N: Nat> Nat for Succ<N> {}
 
+/// The kind of types which represent lists of natural numbers.
 pub trait Nats {}
 
+/// Type representing the empty list.
 pub struct Nil {}
+
+/// Type representing the a list of natural numbers `Ns` with an additional number `N`.
 pub struct Cons<N: Nat, Ns: Nats> {
     phantom_n: std::marker::PhantomData<N>,
     phantom_ns: std::marker::PhantomData<Ns>,

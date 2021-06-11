@@ -102,60 +102,7 @@ mod test2 {
     }
 }
 
-/// Hiding Details behind macro rules.
-mod test3 {
-    use super::*;
-
-    HFun! {
-        fn f_a() -> Result<(), Errors<ErrA>> {
-            Ok(())
-        }
-        fn f_b() -> Result<(), Errors<ErrB>> {
-            Ok(())
-        }
-        fn f_c() -> Result<(), Errors<ErrC>> {
-            Ok(())
-        }
-        fn f_d() -> Result<(), Errors<ErrD>> {
-            Ok(())
-        }
-
-        fn f_ab() -> Result<(), Errors<ErrA, ErrB>> {
-            f_a()?;
-            f_b()?;
-            Ok(())
-        }
-
-        fn f_abc() -> Result<(), Errors<ErrA, ErrB, ErrC>> {
-            f_ab()?;
-            f_c()?;
-            Ok(())
-        }
-    }
-
-    fn handle_f_abc() {
-        match f_abc() {
-            Ok(()) => (),
-            Err(e) => hmatch!(e => {
-                ErrA(e) => { println!("ErrA: {}", e) }
-                ErrB(e) => { println!("ErrB: {}", e) }
-                ErrC(e) => { println!("ErrC: {}", e) }
-            })
-        }
-    }
-
-    fn handle_f_abc_2() {
-        hmatch_res!(f_abc() => {
-            Ok(()) => {}
-            ErrA(e) => { println!("ErrA: {}", e) }
-            ErrB(e) => { println!("ErrB: {}", e) }
-            ErrC(e) => { println!("ErrC: {}", e) }
-        })
-    }
-
-}
-
-/// Hiding Details behind proc macro.
+/// Hiding Details behind macros.
 mod test4 {
     use super::*;
 

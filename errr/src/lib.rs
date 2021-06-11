@@ -48,25 +48,11 @@ pub use Sum::{Here, There};
 
 // Macros //////////////////////////////////////////////////////////////////////
 
-pub trait HTrue {}
-impl<T> HTrue for T {}
-
 #[macro_export]
 macro_rules! HSum {
     ($t:ty , $($ts:tt)*) => {Sum<$t, HSum!($($ts)*)>};
     ($t:ty) => {Sum<$t, Void>};
     () => {Void};
-}
-
-#[macro_export]
-macro_rules! HFun {
-    ($( fn $id:ident ($( $param:ident : $param_t:ty ),*) -> Result<$res_t:ty, Errors<$($err_t:ty),*>> { $($body:tt)* } )*) => {
-        $(
-            fn $id
-                <E: $(Has<$err_t, impl Nat> +)* HTrue>
-            ($( $param : $param_t),*) -> Result<$res_t, E> { $($body)* }
-        )*
-    }
 }
 
 #[macro_export]

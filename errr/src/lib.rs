@@ -1,6 +1,6 @@
 pub use errr_proc::*;
 
-// TODO: give a way to define/derive HSum/Has/Embed instances for real enums. This can be usefull at api boundaries.
+// TODO: give a way to define/derive Sum/Has/Embed instances for real enums. This can be usefull at api boundaries.
 
 /// A Sum-Type like [`Result`], but with different names.
 ///
@@ -25,9 +25,9 @@ pub use errr_proc::*;
 /// let err_c: SumError = There(There(Here(5.2)));     // Index 2: f32
 /// ```
 ///
-/// The [`HSum!`] macro gives more readable syntax to write down nested [`Sum`]-Types:
+/// The [`Sum!`] macro gives more readable syntax to write down nested [`Sum`]-Types:
 /// ```
-/// type SumError = HSum!(u64, String, f32);
+/// type SumError = Sum!(u64, String, f32);
 /// ```
 #[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
 pub enum Sum<A, B> {
@@ -49,8 +49,8 @@ pub use Sum::{Here, There};
 // Macros //////////////////////////////////////////////////////////////////////
 
 #[macro_export]
-macro_rules! HSum {
-    ($t:ty , $($ts:tt)*) => {Sum<$t, HSum!($($ts)*)>};
+macro_rules! Sum {
+    ($t:ty , $($ts:tt)*) => {Sum<$t, Sum!($($ts)*)>};
     ($t:ty) => {Sum<$t, Void>};
     () => {Void};
 }
@@ -71,7 +71,7 @@ macro_rules! hmatch_inner {
 #[macro_export]
 macro_rules! hmatch {
     ( $e:expr => { $( $err:ident($pat:pat) => { $($body:tt)* } )* } ) => {{
-        let e: HSum!($($err),*) = $e;
+        let e: Sum!($($err),*) = $e;
         hmatch_inner!((e) { $( $err($pat) => { $($body)* } )* })
     }}
 }
@@ -204,10 +204,10 @@ mod tests {
 
     #[test]
     fn test_inject() {
-        let a: HSum!(u64, f32, bool, String) = inject(32);
-        let b: HSum!(u64, f32, bool, String) = inject(32.0);
-        let c: HSum!(u64, f32, bool, String) = inject(true);
-        let d: HSum!(u64, f32, bool, String) = inject("".to_owned());
+        let a: Sum!(u64, f32, bool, String) = inject(32);
+        let b: Sum!(u64, f32, bool, String) = inject(32.0);
+        let c: Sum!(u64, f32, bool, String) = inject(true);
+        let d: Sum!(u64, f32, bool, String) = inject("".to_owned());
         assert_eq!(a, Here(32));
         assert_eq!(b, There(Here(32.0)));
         assert_eq!(c, There(There(Here(true))));
@@ -216,7 +216,7 @@ mod tests {
 
     #[test]
     fn test_embed() {
-        let x: HSum!(u64, f32, bool, String) = Here(32);
-        let _: HSum!(u8, u64, u32, f32, u16, bool, String) = x.embed();
+        let x: Sum!(u64, f32, bool, String) = Here(32);
+        let _: Sum!(u8, u64, u32, f32, u16, bool, String) = x.embed();
     }
 }

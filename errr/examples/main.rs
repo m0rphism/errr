@@ -27,14 +27,14 @@ mod test1 {
         Ok(())
     }
 
-    fn f_ab_1() -> Result<(), HSum!(ErrA, ErrB)> {
+    fn f_ab_1() -> Result<(), Sum!(ErrA, ErrB)> {
         f_a().map_err(inject)?;
         f_b().map_err(inject)?;
         Ok(())
     }
 
     // Stuff still works if we use an error type with more possibilities.
-    fn f_ab_2() -> Result<(), HSum!(ErrD, ErrB, ErrA, ErrC)> {
+    fn f_ab_2() -> Result<(), Sum!(ErrD, ErrB, ErrA, ErrC)> {
         f_a().map_err(inject)?;
         f_b().map_err(inject)?;
         Ok(())
@@ -78,7 +78,7 @@ mod test2 {
     }
 
     fn handle_f_abc_3() {
-        let res: Result<(), HSum!(ErrA, ErrB, ErrC)> = f_abc();
+        let res: Result<(), Sum!(ErrA, ErrB, ErrC)> = f_abc();
         match res {
             Ok(()) => (),
             Err(e) => match e {
@@ -91,7 +91,7 @@ mod test2 {
     }
 
     fn handle_f_abc_4() {
-        let res: Result<(), HSum!(ErrA, ErrB, ErrC)> = f_abc();
+        let res: Result<(), Sum!(ErrA, ErrB, ErrC)> = f_abc();
         match res {
             Ok(()) => (),
             Err(e) => match matches(e) {

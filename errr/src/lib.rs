@@ -237,6 +237,7 @@ impl<T, U, TS: Has<T, N>, N: Nat> Has<T, Succ<N>> for Sum<U, TS> {
 ///
 /// `Ns` is inferred by the compiler, if the constructor types are unique.
 pub trait EmbedTo<TS, Ns: Nats> {
+    /// Embed the constructors from `Self` into `TS`.
     fn embed(self) -> TS;
 }
 
@@ -258,6 +259,7 @@ impl<US> EmbedTo<US, Nil> for Void {
     }
 }
 
+/// Embed the constructors from `US` into `TS`.
 pub fn embed<TS, US: EmbedTo<TS, impl Nats>>(us: US) -> TS {
     US::embed(us)
 }

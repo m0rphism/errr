@@ -14,7 +14,7 @@ use syn::{parse_macro_input, ItemFn, ReturnType, Type, TypePath, Path,
           PathArguments, AngleBracketedGenericArguments, Ident, GenericArgument,
           GenericParam, TypeParam, punctuated::Punctuated, token, Token,
           TypeParamBound, parse_quote, Fields, FieldsNamed, FieldsUnnamed, Field,
-          Arm, ItemEnum,
+          Arm, ItemEnum, TraitBound,
 };
 
 fn nat(n: usize) -> Type {
@@ -45,7 +45,8 @@ fn fields_to_type(fs: &Fields) -> Type {
     }
 }
 
-/// Derives the [`Has`] trait for each constructor of an `enum`.
+/// Derives an implementation of [`Has`] for each constructor of an
+/// `enum` and [`EmbedTo`] for the type itself.
 ///
 /// For example for the `enum`
 /// ```
@@ -56,10 +57,11 @@ fn fields_to_type(fs: &Fields) -> Type {
 ///     ErrorC(ErrC),
 /// }
 /// ```
-/// implementations for
-/// `Has<ErrA, Zero>`,
-/// `Has<ErrB, Succ<Zero>>`, and
-/// `Has<ErrC, Succ<Succ<Zero>>>` are derived.
+/// the following implementations are derived:
+/// - `Has<ErrA, Zero>`,
+/// - `Has<ErrB, Succ<Zero>>`,
+/// - `Has<ErrC, Succ<Succ<Zero>>>`, and
+/// - `EmbedTo<_, _>`.
 ///
 /// The implementation for `Has<ErrA, Zero>` is
 /// ```
@@ -79,7 +81,20 @@ fn fields_to_type(fs: &Fields) -> Type {
 ///     }
 /// }
 /// ```
-/// The other two implementations are analogous.
+/// The other two [`Has`]-implementations are analogous.
+///
+/// The derived [`EmbedTo`]-implementation is:
+/// ```
+/// impl<N1: Nat, N2: Nat, N3: Nat, Us: Has<ErrA, N1> + Has<ErrB, N2> + Has<ErrC, N3>> EmbedTo<Us, Cons<N1, Cons<N2, Cons<N3, Nil>>>> for ErrorABC {
+///     fn embed(self) -> Us {
+///         match self {
+///             ErrorABC::ErrorA(e) => inject(e),
+///             ErrorABC::ErrorB(e) => inject(e),
+///             ErrorABC::ErrorC(e) => inject(e),
+///         }
+///     }
+/// }
+/// ```
 #[proc_macro_derive(Has)]
 pub fn derive_has(item: TokenStream) -> TokenStream {
     let f = parse_macro_input!(item as ItemEnum);
@@ -87,6 +102,8 @@ pub fn derive_has(item: TokenStream) -> TokenStream {
 
     let variant_types: Vec<Type> = f.variants.iter().map(|v| fields_to_type(&v.fields)).collect();
     let enum_id = &f.ident;
+
+    // Derive [Has] implementations.
     for (i, v) in f.variants.iter().enumerate() {
         let v_id = &v.ident;
         let n = nat(i);
@@ -117,6 +134,35 @@ pub fn derive_has(item: TokenStream) -> TokenStream {
             }
         ).into());
     }
+
+    // Derive [Embed] implementation.
+    let mut embed_arms: Vec<Arm> = vec![];
+    for v in &f.variants {
+        let v_id = &v.ident;
+        embed_arms.push(parse_quote!(#enum_id::#v_id(t) => inject(t),));
+    }
+    let nat_ids: Vec<Ident> = f.variants.iter().enumerate().map(|(i,_)| {
+        Ident::new(&format!("N{}", i), Span::call_site())
+    }).collect();
+    let nat_bounds: Vec<TypeParam> = nat_ids.iter().map(|n| {
+        parse_quote!(#n : Nat)
+    }).collect();
+    let bounds: Vec<TraitBound> = nat_ids.iter().zip(variant_types.iter()).map(|(n, t)| {
+        parse_quote!(Has<#t, #n>)
+    }).collect();
+    let mut nat_list: Type = parse_quote!(Nil);
+    for n in &nat_ids {
+        nat_list = parse_quote!(Cons<#n, #nat_list>);
+    }
+    out.extend::<TokenStream>(quote!(
+        impl<#(#nat_bounds,)* Us: #(#bounds)+*> EmbedTo<Us, #nat_list> for #enum_id {
+            fn embed(self) -> Us {
+                match self {
+                    #(#embed_arms)*
+                }
+            }
+        }
+    ).into());
 
     out
 }

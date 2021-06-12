@@ -250,6 +250,21 @@ mod test3 {
                 Err(ErrorABC::ErrorC(_e)) => todo!(),
             }
         }
+
+        impl<N1: Nat, N2: Nat, N3: Nat, Us: Has<ErrA, N1> + Has<ErrB, N2> + Has<ErrC, N3>> EmbedTo<Us, Cons<N1, Cons<N2, Cons<N3, Nil>>>> for ErrorABC {
+            fn embed(self) -> Us {
+                match self {
+                    ErrorABC::ErrorA(e) => inject(e),
+                    ErrorABC::ErrorB(e) => inject(e),
+                    ErrorABC::ErrorC(e) => inject(e),
+                }
+            }
+        }
+
+        fn embed_abc() {
+            let x: ErrorABC = f_abc().unwrap_err();
+            let _: Sum!(String, ErrA, bool, ErrB, ErrC) = x.embed();
+        }
     }
 
     // Use own enum to instantiate the polymorphic variant. (WITH MACROS)
@@ -270,6 +285,11 @@ mod test3 {
                 Err(ErrorABC::ErrorB(_e)) => todo!(),
                 Err(ErrorABC::ErrorC(_e)) => todo!(),
             }
+        }
+
+        fn embed_abc() {
+            let x: ErrorABC = f_abc().unwrap_err();
+            let _: Sum!(String, ErrA, bool, ErrB, ErrC) = x.embed();
         }
     }
 }

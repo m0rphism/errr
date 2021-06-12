@@ -273,6 +273,8 @@ pub fn embed<Ts, Us: EmbedTo<Ts, impl Nats>>(us: Us) -> Ts {
     Us::embed(us)
 }
 
+// Tests ///////////////////////////////////////////////////////////////////////
+
 #[cfg(test)]
 mod tests {
     use super::*;

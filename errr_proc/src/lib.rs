@@ -45,6 +45,41 @@ fn fields_to_type(fs: &Fields) -> Type {
     }
 }
 
+/// Derives the [`Has`] trait for each constructor of an `enum`.
+///
+/// For example for the `enum`
+/// ```
+/// #[derive(Has)]
+/// enum ErrorABC {
+///     ErrorA(ErrA),
+///     ErrorB(ErrB),
+///     ErrorC(ErrC),
+/// }
+/// ```
+/// implementations for
+/// `Has<ErrA, Zero>`,
+/// `Has<ErrB, Succ<Zero>>`, and
+/// `Has<ErrC, Succ<Succ<Zero>>>` are derived.
+///
+/// The implementation for `Has<ErrA, Zero>` is
+/// ```
+/// impl Has<ErrA, Zero> for ErrorABC {
+///     type WithoutT = Sum!(ErrB, ErrC);
+///
+///     fn inject(t: ErrA) -> Self {
+///         ErrorABC::ErrorA(t)
+///     }
+///
+///     fn pull_out(self) -> Sum<ErrA, Self::WithoutT> {
+///         match self {
+///             ErrorABC::ErrorA(e) => Here(e),
+///             ErrorABC::ErrorB(e) => There(inject(e)),
+///             ErrorABC::ErrorC(e) => There(inject(e)),
+///         }
+///     }
+/// }
+/// ```
+/// The other two implementations are analogous.
 #[proc_macro_derive(Has)]
 pub fn derive_has(item: TokenStream) -> TokenStream {
     let f = parse_macro_input!(item as ItemEnum);
@@ -103,6 +138,21 @@ fn split_type_app(t: &Type) -> (&Ident, Vec<&Type>) {
     (&segment.ident, args)
 }
 
+/// Syntax for defining functions which return `Result<T, E>` where `E` is a polymorphic variant.
+///
+/// For example the function
+/// ```
+/// #[errr]
+/// fn f_ab() -> Result<(), Errors<ErrA, ErrB>> {
+///     // ...
+/// }
+/// ```
+/// expands to
+/// ```
+/// fn f_ab<E: Has<ErrA, impl Nat> + Has<ErrB, impl Nat>>() -> Result<(), E> {
+///     // ...
+/// }
+/// ```
 #[proc_macro_attribute]
 pub fn errr(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let f = parse_macro_input!(item as ItemFn);

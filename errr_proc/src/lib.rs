@@ -10,11 +10,11 @@ use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
 
-use syn::{parse_macro_input, ItemFn, ReturnType, Type, TypePath, Path,
-          PathArguments, AngleBracketedGenericArguments, Ident, GenericArgument,
-          GenericParam, TypeParam, punctuated::Punctuated, token, Token,
-          TypeParamBound, parse_quote, Fields, FieldsNamed, FieldsUnnamed, Field,
-          Arm, ItemEnum, TraitBound,
+use syn::{
+    parse_macro_input, parse_quote, punctuated::Punctuated, token, AngleBracketedGenericArguments,
+    Arm, Field, Fields, FieldsNamed, FieldsUnnamed, GenericArgument, GenericParam, Ident, ItemEnum,
+    ItemFn, Path, PathArguments, ReturnType, Token, TraitBound, Type, TypeParam, TypeParamBound,
+    TypePath,
 };
 
 fn nat(n: usize) -> Type {
@@ -39,9 +39,9 @@ fn fields_to_type2(fs: &Punctuated<Field, Token!(,)>) -> Type {
 
 fn fields_to_type(fs: &Fields) -> Type {
     match fs {
-        Fields::Unnamed(FieldsUnnamed { unnamed, ..}) => fields_to_type2(unnamed),
+        Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => fields_to_type2(unnamed),
         Fields::Unit => parse_quote!(()),
-        Fields::Named(FieldsNamed { named, ..}) => fields_to_type2(named),
+        Fields::Named(FieldsNamed { named, .. }) => fields_to_type2(named),
     }
 }
 
@@ -95,7 +95,11 @@ pub fn derive_has(item: TokenStream) -> TokenStream {
     let f = parse_macro_input!(item as ItemEnum);
     let mut out = TokenStream::new();
 
-    let variant_types: Vec<Type> = f.variants.iter().map(|v| fields_to_type(&v.fields)).collect();
+    let variant_types: Vec<Type> = f
+        .variants
+        .iter()
+        .map(|v| fields_to_type(&v.fields))
+        .collect();
     let enum_id = &f.ident;
 
     // Derive [Has] implementations.
@@ -105,7 +109,8 @@ pub fn derive_has(item: TokenStream) -> TokenStream {
         let t = fields_to_type(&v.fields);
         let mut other_variants = variant_types.clone();
         let _ = other_variants.remove(i);
-        let other_variants = Punctuated::<Type, Token!(,)>::from_iter(other_variants.clone().into_iter());
+        let other_variants =
+            Punctuated::<Type, Token!(,)>::from_iter(other_variants.clone().into_iter());
         let mut pull_out_arms: Vec<Arm> = vec![];
         // TODO: this doesn't work with variants containing (named) tuples.
         pull_out_arms.push(parse_quote!(#enum_id::#v_id(t) => Here(t),));
@@ -115,19 +120,22 @@ pub fn derive_has(item: TokenStream) -> TokenStream {
                 pull_out_arms.push(parse_quote!(#enum_id::#v_id(t) => There(inject(t)),));
             }
         }
-        out.extend::<TokenStream>(quote!(
-            impl Has<#t, #n> for #enum_id {
-                type WithoutT = Sum!(#other_variants);
-                fn inject(t: #t) -> Self {
-                    #enum_id::#v_id(t)
-                }
-                fn pull_out(self) -> Sum<#t, Self::WithoutT> {
-                    match self {
-                        #(#pull_out_arms)*
+        out.extend::<TokenStream>(
+            quote!(
+                impl Has<#t, #n> for #enum_id {
+                    type WithoutT = Sum!(#other_variants);
+                    fn inject(t: #t) -> Self {
+                        #enum_id::#v_id(t)
+                    }
+                    fn pull_out(self) -> Sum<#t, Self::WithoutT> {
+                        match self {
+                            #(#pull_out_arms)*
+                        }
                     }
                 }
-            }
-        ).into());
+            )
+            .into(),
+        );
     }
 
     out
@@ -166,7 +174,11 @@ pub fn derive_has(item: TokenStream) -> TokenStream {
 pub fn derive_embed_to(item: TokenStream) -> TokenStream {
     let f = parse_macro_input!(item as ItemEnum);
 
-    let variant_types: Vec<Type> = f.variants.iter().map(|v| fields_to_type(&v.fields)).collect();
+    let variant_types: Vec<Type> = f
+        .variants
+        .iter()
+        .map(|v| fields_to_type(&v.fields))
+        .collect();
     let enum_id = &f.ident;
 
     // Derive [Embed] implementation.
@@ -175,15 +187,18 @@ pub fn derive_embed_to(item: TokenStream) -> TokenStream {
         let v_id = &v.ident;
         embed_arms.push(parse_quote!(#enum_id::#v_id(t) => inject(t),));
     }
-    let nat_ids: Vec<Ident> = f.variants.iter().enumerate().map(|(i,_)| {
-        Ident::new(&format!("N{}", i), Span::call_site())
-    }).collect();
-    let nat_bounds: Vec<TypeParam> = nat_ids.iter().map(|n| {
-        parse_quote!(#n : Nat)
-    }).collect();
-    let bounds: Vec<TraitBound> = nat_ids.iter().zip(variant_types.iter()).map(|(n, t)| {
-        parse_quote!(Has<#t, #n>)
-    }).collect();
+    let nat_ids: Vec<Ident> = f
+        .variants
+        .iter()
+        .enumerate()
+        .map(|(i, _)| Ident::new(&format!("N{}", i), Span::call_site()))
+        .collect();
+    let nat_bounds: Vec<TypeParam> = nat_ids.iter().map(|n| parse_quote!(#n : Nat)).collect();
+    let bounds: Vec<TraitBound> = nat_ids
+        .iter()
+        .zip(variant_types.iter())
+        .map(|(n, t)| parse_quote!(Has<#t, #n>))
+        .collect();
     let mut nat_list: Type = parse_quote!(Nil);
     for n in &nat_ids {
         nat_list = parse_quote!(Cons<#n, #nat_list>);
@@ -196,23 +211,33 @@ pub fn derive_embed_to(item: TokenStream) -> TokenStream {
                 }
             }
         }
-    ).into()
+    )
+    .into()
 }
 
 fn split_type_app(t: &Type) -> (&Ident, Vec<&Type>) {
     let segments = match t {
-        Type::Path(TypePath{ qself: _, path: Path{ leading_colon: _, segments }}) => segments,
+        Type::Path(TypePath {
+            qself: _,
+            path: Path {
+                leading_colon: _,
+                segments,
+            },
+        }) => segments,
         _ => panic!("Invalid return type for errr macro."),
     };
     let segment = segments.first().unwrap();
     let args = match &segment.arguments {
-        PathArguments::AngleBracketed(AngleBracketedGenericArguments{args, ..}) => args,
+        PathArguments::AngleBracketed(AngleBracketedGenericArguments { args, .. }) => args,
         _ => panic!(),
     };
-    let args = args.iter().map(|ga| match ga {
-        GenericArgument::Type(t) => t,
-        _ => panic!(),
-    }).collect();
+    let args = args
+        .iter()
+        .map(|ga| match ga {
+            GenericArgument::Type(t) => t,
+            _ => panic!(),
+        })
+        .collect();
     (&segment.ident, args)
 }
 

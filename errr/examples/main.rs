@@ -160,7 +160,7 @@ mod test3 {
 
     // Macro still works if we add our own generics.
     #[errr]
-    fn f_abC<C>(c: C) -> Result<(), Errors<ErrA, ErrB, C>> {
+    fn f_abc_generic<C>(c: C) -> Result<(), Errors<ErrA, ErrB, C>> {
         f_ab()?;
         Err(inject(c))?;
         Ok(())

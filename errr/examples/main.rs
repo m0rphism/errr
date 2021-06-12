@@ -40,8 +40,7 @@ mod test1 {
         Ok(())
     }
 
-    // Deeper nesting requires embedding, because we always chose a concrete
-    // Error type via `Sum!`.
+    // Deeper nesting requires embedding, because we always chose a concrete error type via `Sum!`.
     fn f_abc() -> Result<(), Sum!(ErrA, ErrB, ErrC)> {
         f_ab_1().map_err(embed)?;
         f_c().map_err(inject)?;
@@ -49,8 +48,7 @@ mod test1 {
     }
 }
 
-/// Automatic composition via polymorphism over error type E.
-/// No embedding required.
+/// Automatic composition via polymorphism over error type E. No embedding required.
 mod test2 {
     use super::*;
 
@@ -80,7 +78,8 @@ mod test2 {
         Ok(())
     }
 
-    fn f_abc<E: Has<ErrA, impl Nat> + Has<ErrB, impl Nat> + Has<ErrC, impl Nat>>() -> Result<(), E> {
+    fn f_abc<E: Has<ErrA, impl Nat> + Has<ErrB, impl Nat> + Has<ErrC, impl Nat>>() -> Result<(), E>
+    {
         f_ab()?;
         f_c()?;
         Ok(())
@@ -100,8 +99,8 @@ mod test2 {
         }
     }
 
-    // We can also match on a single error and if the match fails,
-    // we get a smaller error type to rethrow.
+    // We can also match on a single error and if the match fails, then we get a smaller error type
+    // to rethrow.
     fn handle_f_abc_4() {
         let res: Result<(), Sum!(ErrA, ErrB, ErrC)> = f_abc();
         match res {
@@ -174,7 +173,7 @@ mod test3 {
                 ErrA(e) => { println!("ErrA: {}", e) }
                 ErrB(e) => { println!("ErrB: {}", e) }
                 ErrC(e) => { println!("ErrC: {}", e) }
-            })
+            }),
         }
     }
 
@@ -251,7 +250,13 @@ mod test3 {
             }
         }
 
-        impl<N1: Nat, N2: Nat, N3: Nat, Us: Has<ErrA, N1> + Has<ErrB, N2> + Has<ErrC, N3>> EmbedIn<Us, Cons<N1, Cons<N2, Cons<N3, Nil>>>> for ErrorABC {
+        impl<N1, N2, N3, Us> EmbedIn<Us, Cons<N1, Cons<N2, Cons<N3, Nil>>>> for ErrorABC
+        where
+            N1: Nat,
+            N2: Nat,
+            N3: Nat,
+            Us: Has<ErrA, N1> + Has<ErrB, N2> + Has<ErrC, N3>,
+        {
             fn embed(self) -> Us {
                 match self {
                     ErrorABC::ErrorA(e) => inject(e),

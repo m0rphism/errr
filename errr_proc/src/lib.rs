@@ -45,8 +45,8 @@ fn fields_to_type(fs: &Fields) -> Type {
     }
 }
 
-/// Derives an implementation of [`Has`] for each constructor of an `enum`
-/// and an implementation of [`EmbedIn`] for the `enum` itself. Same as `#[derive(Has, EmbedIn)]`.
+/// Derives an implementation of [`Has`] for each constructor of an `enum` and an implementation of
+/// [`EmbedIn`] for the `enum` itself. Same as `#[derive(Has, EmbedIn)]`.
 #[proc_macro_derive(Variants)]
 pub fn derive_variants(item: TokenStream) -> TokenStream {
     let mut toks = TokenStream::new();
@@ -146,7 +146,13 @@ pub fn derive_has(item: TokenStream) -> TokenStream {
 /// ```
 /// the derived [`EmbedIn`]-implementation is:
 /// ```
-/// impl<N1: Nat, N2: Nat, N3: Nat, Us: Has<ErrA, N1> + Has<ErrB, N2> + Has<ErrC, N3>> EmbedIn<Us, Cons<N1, Cons<N2, Cons<N3, Nil>>>> for ErrorABC {
+/// impl<N1, N2, N3, Us> EmbedIn<Us, Cons<N1, Cons<N2, Cons<N3, Nil>>>> for ErrorABC
+/// where
+///     N1: Nat,
+///     N2: Nat,
+///     N3: Nat,
+///     Us: Has<ErrA, N1> + Has<ErrB, N2> + Has<ErrC, N3>,
+/// {
 ///     fn embed(self) -> Us {
 ///         match self {
 ///             ErrorABC::ErrorA(e) => inject(e),

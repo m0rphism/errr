@@ -1,6 +1,6 @@
 pub use errr_proc::*;
 
-// TODO: give a way to define/derive Sum/Has/Embed instances for real enums. This can be usefull at api boundaries.
+// Sum Type ////////////////////////////////////////////////////////////////////////////////////////
 
 /// A Sum-Type like [`Result`], but with different names.
 ///
@@ -16,16 +16,19 @@ pub use errr_proc::*;
 /// ```
 /// type SumError = Sum<u64, Sum<String, Sum<f32, Void>>>;
 /// ```
-/// The constructor names reflect that we encode enums always as a list and never as a real tree, i.e.
-/// if we nest a [`enum@Sum`] inside a [`enum@Sum`] it always fills the right parameter `B` and never the left parameter `A`.
-/// For example, if we construct a value of type `SumError`, then the number of `There` constructors is the index in the type-level list:
+/// The constructor names reflect that we encode enums always as a list and never as a real tree,
+/// i.e. if we nest a [`enum@Sum`] inside a [`enum@Sum`] it always fills the right parameter `B`
+/// and never the left parameter `A`.
+/// For example, if we construct a value of type `SumError`, then the number of `There` constructors
+/// is the index in the type-level list:
 /// ```
 /// let err_a: SumError = Here(42);                    // Index 0: u64
 /// let err_b: SumError = There(Here("".to_owned()));  // Index 1: String
 /// let err_c: SumError = There(There(Here(5.2)));     // Index 2: f32
 /// ```
 ///
-/// The [`Sum!`] macro gives more readable syntax to write down nested [`enum@Sum`]-Types:
+/// The [`Sum!`] macro gives more readable syntax to write down nested
+/// [`enum@Sum`]-Types:
 /// ```
 /// type SumError = Sum!(u64, String, f32);
 /// ```
@@ -38,15 +41,15 @@ pub enum Sum<A, B> {
 /// A type with no elements.
 ///
 /// This acts as a neutral element to [`enum@Sum`]:
-/// The type [`enum@Sum`]`<A, `[`Void`]`>` is isomorphic to `A`, i.e. while both types have different internal structure,
-/// they have the same number of elements with the same meaning and behave the
+/// The type [`enum@Sum`]`<A, `[`Void`]`>` is isomorphic to `A`, i.e. while both types have different
+/// internal structure, they have the same number of elements with the same meaning and behave the
 /// same for all things we're interested in.
 #[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
 pub enum Void {}
 
 pub use Sum::{Here, There};
 
-// Macros //////////////////////////////////////////////////////////////////////
+// Macros //////////////////////////////////////////////////////////////////////////////////////////
 
 /// Nicer syntax to write down nested [`enum@Sum`]-types.
 ///
@@ -98,12 +101,11 @@ macro_rules! match_sum_inner {
     }
 }
 
-/// Nicer syntax to match on values of types, which implement
-/// `Has<T1, N1> + ... + Has<Tn, Nn>`, by first converting them to
-/// `Sum!(T1, ..., Tn)`.
+/// Nicer syntax to match on values of types, which implement `Has<T1, N1> + ... + Has<Tn, Nn>`,
+/// by first converting them to `Sum!(T1, ..., Tn)`.
 ///
-/// This is similar to [`match_sum_inner!`] but converts the polymorphic variant
-/// to a [`Sum!`] based on the patterns of the match arms:
+/// This is similar to [`match_sum_inner!`] but converts the polymorphic variant to a [`Sum!`] based
+/// on the patterns of the match arms:
 ///
 /// The macro invocation
 /// ```
@@ -141,7 +143,7 @@ macro_rules! match_sum_res {
     }}
 }
 
-// Nats ////////////////////////////////////////////////////////////////////////
+// Natural Numbers at the Type Level ///////////////////////////////////////////////////////////////
 
 /// The kind of types which represent natural numbers.
 ///
@@ -178,12 +180,11 @@ pub struct Cons<N: Nat, Ns: Nats> {
 impl Nats for Nil {}
 impl<Ns: Nats, N: Nat> Nats for Cons<N, Ns> {}
 
-// Has /////////////////////////////////////////////////////////////////////////
+// Has /////////////////////////////////////////////////////////////////////////////////////////////
 
-/// `Has<T, N>` describes types which behave like an enum whose `N`-th
-/// constructor contains type `T`.
-/// If there is only one constructor of type `T`, then the compiler can infer
-/// the `N`.
+/// `Has<T, N>` describes types which behave like an enum whose `N`-th constructor contains
+/// type `T`.
+/// If there is only one constructor of type `T`, then the compiler can infer the `N`.
 pub trait Has<T, N: Nat> {
     /// A type which has all the constructors of `Self` except the one for `T`.
     type WithoutT;
@@ -199,8 +200,8 @@ pub fn inject<T, Ts: Has<T, impl Nat>>(t: T) -> Ts {
     Ts::inject(t)
 }
 
-/// Match on `Self` and return either a `T` or a value of an enum which
-/// could be any other constructor of `Self` except for `T`.
+/// Match on `Self` and return either a `T` or a value of an enum which could be any other
+/// constructor of `Self` except for `T`.
 pub fn matches<T, Ts: Has<T, impl Nat>>(ts: Ts) -> Result<T, Ts::WithoutT> {
     match ts.pull_out() {
         Here(t) => Ok(t),
@@ -237,13 +238,13 @@ impl<T, U, Ts: Has<T, N>, N: Nat> Has<T, Succ<N>> for Sum<U, Ts> {
     }
 }
 
-// EmbedIn /////////////////////////////////////////////////////////////////////
+// EmbedIn /////////////////////////////////////////////////////////////////////////////////////////
 
-/// If we have some enum `Self`, which has a subset of the constructors of some
-/// enum `Ts`, then we can convert `Self` to `Ts`.
+/// If we have some enum `Self`, which has a subset of the constructors of some enum `Ts`, then we
+/// can convert `Self` to `Ts`.
 ///
-/// `Ns` is a list of type level natural numbers, which describes for each
-/// constructor from `Self` at which index the corresponding constructor in `Ts` is.
+/// `Ns` is a list of type level natural numbers, which describes for each constructor from `Self`
+/// at which index the corresponding constructor in `Ts` is.
 ///
 /// `Ns` is inferred by the compiler, if the constructor types are unique.
 pub trait EmbedIn<Ts, Ns: Nats> {
@@ -251,9 +252,15 @@ pub trait EmbedIn<Ts, Ns: Nats> {
     fn embed(self) -> Ts;
 }
 
-/// Recursive case: Try to embed the first constructor from `Self` otherwise
-/// recursively embed the rest.
-impl<T, N: Nat, Ns: Nats, Ts: EmbedIn<Us, Ns>, Us: Has<T, N>> EmbedIn<Us, Cons<N, Ns>> for Sum<T, Ts> {
+/// Recursive case: Try to embed the first constructor from `Self` otherwise recursively embed the
+/// rest.
+impl<T, N, Ns, Ts, Us> EmbedIn<Us, Cons<N, Ns>> for Sum<T, Ts>
+where
+    N: Nat,
+    Ns: Nats,
+    Ts: EmbedIn<Us, Ns>,
+    Us: Has<T, N>,
+{
     fn embed(self) -> Us {
         match self {
             Here(t) => inject(t),
@@ -274,7 +281,7 @@ pub fn embed<Ts, Us: EmbedIn<Ts, impl Nats>>(us: Us) -> Ts {
     Us::embed(us)
 }
 
-// Tests ///////////////////////////////////////////////////////////////////////
+// Tests ///////////////////////////////////////////////////////////////////////////////////////////
 
 #[cfg(test)]
 mod tests {

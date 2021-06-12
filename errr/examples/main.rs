@@ -291,6 +291,20 @@ mod test3 {
             let x: ErrorABC = f_abc().unwrap_err();
             let _: Sum!(String, ErrA, bool, ErrB, ErrC) = x.embed();
         }
+
+        #[derive(Has)]
+        enum ErrorABCDE {
+            ErrorA(ErrA),
+            ErrorB(ErrB),
+            ErrorC(ErrC),
+            ErrorD(ErrD),
+            ErrorE(f64),
+        }
+
+        fn embed_abc_2() {
+            let x: ErrorABC = f_abc().unwrap_err();
+            let _: ErrorABCDE = x.embed();
+        }
     }
 }
 

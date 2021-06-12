@@ -186,6 +186,92 @@ mod test3 {
             ErrC(e) => { println!("ErrC: {}", e) }
         })
     }
+
+    // Use own enum to instantiate the polymorphic variant. (WITHOUT MACROS)
+    mod custom_variants_1 {
+        use super::*;
+
+        enum ErrorABC {
+            ErrorA(ErrA),
+            ErrorB(ErrB),
+            ErrorC(ErrC),
+        }
+
+        impl Has<ErrA, Zero> for ErrorABC {
+            type WithoutT = Sum!(ErrB, ErrC);
+
+            fn inject(t: ErrA) -> Self {
+                ErrorABC::ErrorA(t)
+            }
+
+            fn pull_out(self) -> Sum<ErrA, Self::WithoutT> {
+                match self {
+                    ErrorABC::ErrorA(e) => Here(e),
+                    ErrorABC::ErrorB(e) => There(inject(e)),
+                    ErrorABC::ErrorC(e) => There(inject(e)),
+                }
+            }
+        }
+        impl Has<ErrB, Succ<Zero>> for ErrorABC {
+            type WithoutT = Sum!(ErrA, ErrC);
+
+            fn inject(t: ErrB) -> Self {
+                ErrorABC::ErrorB(t)
+            }
+
+            fn pull_out(self) -> Sum<ErrB, Self::WithoutT> {
+                match self {
+                    ErrorABC::ErrorA(e) => There(inject(e)),
+                    ErrorABC::ErrorB(e) => Here(e),
+                    ErrorABC::ErrorC(e) => There(inject(e)),
+                }
+            }
+        }
+        impl Has<ErrC, Succ<Succ<Zero>>> for ErrorABC {
+            type WithoutT = Sum!(ErrA, ErrB);
+
+            fn inject(t: ErrC) -> Self {
+                ErrorABC::ErrorC(t)
+            }
+
+            fn pull_out(self) -> Sum<ErrC, Self::WithoutT> {
+                match self {
+                    ErrorABC::ErrorA(e) => There(inject(e)),
+                    ErrorABC::ErrorB(e) => There(inject(e)),
+                    ErrorABC::ErrorC(e) => Here(e),
+                }
+            }
+        }
+        fn handle_f_abc() {
+            match f_abc() {
+                Ok(()) => todo!(),
+                Err(ErrorABC::ErrorA(_e)) => todo!(),
+                Err(ErrorABC::ErrorB(_e)) => todo!(),
+                Err(ErrorABC::ErrorC(_e)) => todo!(),
+            }
+        }
+    }
+
+    // Use own enum to instantiate the polymorphic variant. (WITH MACROS)
+    mod custom_variants_2 {
+        use super::*;
+
+        #[derive(Has)]
+        enum ErrorABC {
+            ErrorA(ErrA),
+            ErrorB(ErrB),
+            ErrorC(ErrC),
+        }
+
+        fn handle_f_abc() {
+            match f_abc() {
+                Ok(()) => todo!(),
+                Err(ErrorABC::ErrorA(_e)) => todo!(),
+                Err(ErrorABC::ErrorB(_e)) => todo!(),
+                Err(ErrorABC::ErrorC(_e)) => todo!(),
+            }
+        }
+    }
 }
 
 fn main() {

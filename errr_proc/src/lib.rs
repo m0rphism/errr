@@ -4,15 +4,87 @@ extern crate proc_macro;
 extern crate proc_macro2;
 extern crate quote;
 
+use std::iter::FromIterator;
+
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
 
 use syn::{parse_macro_input, ItemFn, ReturnType, Type, TypePath, Path,
           PathArguments, AngleBracketedGenericArguments, Ident, GenericArgument,
-          GenericParam, TypeParam, punctuated::Punctuated, token,
-          TypeParamBound, parse_quote
+          GenericParam, TypeParam, punctuated::Punctuated, token, Token,
+          TypeParamBound, parse_quote, Fields, FieldsNamed, FieldsUnnamed, Field,
+          Arm, ItemEnum,
 };
+
+fn nat(n: usize) -> Type {
+    let mut t = parse_quote!(Zero);
+    for _ in 0..n {
+        t = parse_quote!(Succ<#t>);
+    }
+    t
+}
+
+fn fields_to_type2(fs: &Punctuated<Field, Token!(,)>) -> Type {
+    if fs.len() == 1 {
+        fs.iter().next().unwrap().ty.clone()
+    } else {
+        let mut ts = Punctuated::<Type, Token!(,)>::new();
+        for f in fs {
+            ts.push(f.ty.clone())
+        }
+        parse_quote!((#ts))
+    }
+}
+
+fn fields_to_type(fs: &Fields) -> Type {
+    match fs {
+        Fields::Unnamed(FieldsUnnamed { unnamed, ..}) => fields_to_type2(unnamed),
+        Fields::Unit => parse_quote!(()),
+        Fields::Named(FieldsNamed { named, ..}) => fields_to_type2(named),
+    }
+}
+
+#[proc_macro_derive(Has)]
+pub fn derive_has(item: TokenStream) -> TokenStream {
+    let f = parse_macro_input!(item as ItemEnum);
+    let mut out = TokenStream::new();
+
+    let variant_types: Vec<Type> = f.variants.iter().map(|v| fields_to_type(&v.fields)).collect();
+    let enum_id = &f.ident;
+    for (i, v) in f.variants.iter().enumerate() {
+        let v_id = &v.ident;
+        let n = nat(i);
+        let t = fields_to_type(&v.fields);
+        let mut other_variants = variant_types.clone();
+        let _ = other_variants.remove(i);
+        let other_variants = Punctuated::<Type, Token!(,)>::from_iter(other_variants.clone().into_iter());
+        let mut pull_out_arms: Vec<Arm> = vec![];
+        // TODO: this doesn't work with variants containing (named) tuples.
+        pull_out_arms.push(parse_quote!(#enum_id::#v_id(t) => Here(t),));
+        for (j, v) in f.variants.iter().enumerate() {
+            if j != i {
+                let v_id = &v.ident;
+                pull_out_arms.push(parse_quote!(#enum_id::#v_id(t) => There(inject(t)),));
+            }
+        }
+        out.extend::<TokenStream>(quote!(
+            impl Has<#t, #n> for #enum_id {
+                type WithoutT = Sum!(#other_variants);
+                fn inject(t: #t) -> Self {
+                    #enum_id::#v_id(t)
+                }
+                fn pull_out(self) -> Sum<#t, Self::WithoutT> {
+                    match self {
+                        #(#pull_out_arms)*
+                    }
+                }
+            }
+        ).into());
+    }
+
+    out
+}
 
 fn split_type_app(t: &Type) -> (&Ident, Vec<&Type>) {
     let segments = match t {

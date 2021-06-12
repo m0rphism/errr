@@ -251,7 +251,7 @@ mod test3 {
             }
         }
 
-        impl<N1: Nat, N2: Nat, N3: Nat, Us: Has<ErrA, N1> + Has<ErrB, N2> + Has<ErrC, N3>> EmbedTo<Us, Cons<N1, Cons<N2, Cons<N3, Nil>>>> for ErrorABC {
+        impl<N1: Nat, N2: Nat, N3: Nat, Us: Has<ErrA, N1> + Has<ErrB, N2> + Has<ErrC, N3>> EmbedIn<Us, Cons<N1, Cons<N2, Cons<N3, Nil>>>> for ErrorABC {
             fn embed(self) -> Us {
                 match self {
                     ErrorABC::ErrorA(e) => inject(e),
@@ -271,7 +271,7 @@ mod test3 {
     mod custom_variants_2 {
         use super::*;
 
-        #[derive(Has)]
+        #[derive(Variants)]
         enum ErrorABC {
             ErrorA(ErrA),
             ErrorB(ErrB),
@@ -292,7 +292,7 @@ mod test3 {
             let _: Sum!(String, ErrA, bool, ErrB, ErrC) = x.embed();
         }
 
-        #[derive(Has)]
+        #[derive(Variants)]
         enum ErrorABCDE {
             ErrorA(ErrA),
             ErrorB(ErrB),

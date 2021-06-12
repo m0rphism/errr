@@ -45,8 +45,17 @@ fn fields_to_type(fs: &Fields) -> Type {
     }
 }
 
-/// Derives an implementation of [`Has`] for each constructor of an
-/// `enum` and [`EmbedTo`] for the type itself.
+/// Derives an implementation of [`Has`] for each constructor of an `enum`
+/// and an implementation of [`EmbedIn`] for the `enum` itself. Same as `#[derive(Has, EmbedIn)]`.
+#[proc_macro_derive(Variants)]
+pub fn derive_variants(item: TokenStream) -> TokenStream {
+    let mut toks = TokenStream::new();
+    toks.extend(derive_has(item.clone()));
+    toks.extend(derive_embed_to(item.clone()));
+    toks
+}
+
+/// Derives an implementation of [`Has`] for each constructor of an `enum`.
 ///
 /// For example for the `enum`
 /// ```
@@ -61,7 +70,6 @@ fn fields_to_type(fs: &Fields) -> Type {
 /// - `Has<ErrA, Zero>`,
 /// - `Has<ErrB, Succ<Zero>>`,
 /// - `Has<ErrC, Succ<Succ<Zero>>>`, and
-/// - `EmbedTo<_, _>`.
 ///
 /// The implementation for `Has<ErrA, Zero>` is
 /// ```
@@ -82,19 +90,6 @@ fn fields_to_type(fs: &Fields) -> Type {
 /// }
 /// ```
 /// The other two [`Has`]-implementations are analogous.
-///
-/// The derived [`EmbedTo`]-implementation is:
-/// ```
-/// impl<N1: Nat, N2: Nat, N3: Nat, Us: Has<ErrA, N1> + Has<ErrB, N2> + Has<ErrC, N3>> EmbedTo<Us, Cons<N1, Cons<N2, Cons<N3, Nil>>>> for ErrorABC {
-///     fn embed(self) -> Us {
-///         match self {
-///             ErrorABC::ErrorA(e) => inject(e),
-///             ErrorABC::ErrorB(e) => inject(e),
-///             ErrorABC::ErrorC(e) => inject(e),
-///         }
-///     }
-/// }
-/// ```
 #[proc_macro_derive(Has)]
 pub fn derive_has(item: TokenStream) -> TokenStream {
     let f = parse_macro_input!(item as ItemEnum);
@@ -135,6 +130,39 @@ pub fn derive_has(item: TokenStream) -> TokenStream {
         ).into());
     }
 
+    out
+}
+
+/// Derives an implementation of [`EmbedIn`] for an `enum`.
+///
+/// For example for the `enum`
+/// ```
+/// #[derive(Has)]
+/// enum ErrorABC {
+///     ErrorA(ErrA),
+///     ErrorB(ErrB),
+///     ErrorC(ErrC),
+/// }
+/// ```
+/// the derived [`EmbedIn`]-implementation is:
+/// ```
+/// impl<N1: Nat, N2: Nat, N3: Nat, Us: Has<ErrA, N1> + Has<ErrB, N2> + Has<ErrC, N3>> EmbedIn<Us, Cons<N1, Cons<N2, Cons<N3, Nil>>>> for ErrorABC {
+///     fn embed(self) -> Us {
+///         match self {
+///             ErrorABC::ErrorA(e) => inject(e),
+///             ErrorABC::ErrorB(e) => inject(e),
+///             ErrorABC::ErrorC(e) => inject(e),
+///         }
+///     }
+/// }
+/// ```
+#[proc_macro_derive(EmbedIn)]
+pub fn derive_embed_to(item: TokenStream) -> TokenStream {
+    let f = parse_macro_input!(item as ItemEnum);
+
+    let variant_types: Vec<Type> = f.variants.iter().map(|v| fields_to_type(&v.fields)).collect();
+    let enum_id = &f.ident;
+
     // Derive [Embed] implementation.
     let mut embed_arms: Vec<Arm> = vec![];
     for v in &f.variants {
@@ -154,17 +182,15 @@ pub fn derive_has(item: TokenStream) -> TokenStream {
     for n in &nat_ids {
         nat_list = parse_quote!(Cons<#n, #nat_list>);
     }
-    out.extend::<TokenStream>(quote!(
-        impl<#(#nat_bounds,)* Us: #(#bounds)+*> EmbedTo<Us, #nat_list> for #enum_id {
+    quote!(
+        impl<#(#nat_bounds,)* Us: #(#bounds)+*> EmbedIn<Us, #nat_list> for #enum_id {
             fn embed(self) -> Us {
                 match self {
                     #(#embed_arms)*
                 }
             }
         }
-    ).into());
-
-    out
+    ).into()
 }
 
 fn split_type_app(t: &Type) -> (&Ident, Vec<&Type>) {

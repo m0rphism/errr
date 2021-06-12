@@ -236,7 +236,7 @@ impl<T, U, Ts: Has<T, N>, N: Nat> Has<T, Succ<N>> for Sum<U, Ts> {
     }
 }
 
-// EmbedTo /////////////////////////////////////////////////////////////////////
+// EmbedIn /////////////////////////////////////////////////////////////////////
 
 /// If we have some enum `Self`, which has a subset of the constructors of some
 /// enum `Ts`, then we can convert `Self` to `Ts`.
@@ -245,14 +245,14 @@ impl<T, U, Ts: Has<T, N>, N: Nat> Has<T, Succ<N>> for Sum<U, Ts> {
 /// constructor from `Self` at which index the corresponding constructor in `Ts` is.
 ///
 /// `Ns` is inferred by the compiler, if the constructor types are unique.
-pub trait EmbedTo<Ts, Ns: Nats> {
+pub trait EmbedIn<Ts, Ns: Nats> {
     /// Embed the constructors from `Self` into `Ts`.
     fn embed(self) -> Ts;
 }
 
 /// Recursive case: Try to embed the first constructor from `Self` otherwise
 /// recursively embed the rest.
-impl<T, N: Nat, Ns: Nats, Ts: EmbedTo<Us, Ns>, Us: Has<T, N>> EmbedTo<Us, Cons<N, Ns>> for Sum<T, Ts> {
+impl<T, N: Nat, Ns: Nats, Ts: EmbedIn<Us, Ns>, Us: Has<T, N>> EmbedIn<Us, Cons<N, Ns>> for Sum<T, Ts> {
     fn embed(self) -> Us {
         match self {
             Here(t) => inject(t),
@@ -262,14 +262,14 @@ impl<T, N: Nat, Ns: Nats, Ts: EmbedTo<Us, Ns>, Us: Has<T, N>> EmbedTo<Us, Cons<N
 }
 
 /// Base case: If all constructors are embedded, then the recursion stops.
-impl<Us> EmbedTo<Us, Nil> for Void {
+impl<Us> EmbedIn<Us, Nil> for Void {
     fn embed(self) -> Us {
         match self {}
     }
 }
 
 /// Embed the constructors from `Us` into `Ts`.
-pub fn embed<Ts, Us: EmbedTo<Ts, impl Nats>>(us: Us) -> Ts {
+pub fn embed<Ts, Us: EmbedIn<Ts, impl Nats>>(us: Us) -> Ts {
     Us::embed(us)
 }
 

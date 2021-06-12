@@ -148,10 +148,10 @@ macro_rules! match_sum_res {
 /// Example: the number `2` is represented by the type `Succ<Succ<Zero>>`.
 pub trait Nat {}
 
-/// Type representing the natural number `0`.
+/// The type `Zero` represents the natural number `0` at the type level.
 pub struct Zero {}
 
-/// Type representing the successor of a natural number `N`, i.e. `N + 1`.
+/// The type `Succ<N>` represents the natural number `N + 1` at the type level.
 pub struct Succ<N: Nat> {
     phantom: std::marker::PhantomData<N>,
 }
@@ -165,10 +165,11 @@ impl<N: Nat> Nat for Succ<N> {}
 /// `Cons<Zero, Cons<Succ<Zero>, Cons<Zero, Nil>>>`.
 pub trait Nats {}
 
-/// Type representing the empty list.
+/// The type `Nil` represents the empty list at the type level.
 pub struct Nil {}
 
-/// Type representing a list of natural numbers `Ns` with an additional number `N`.
+/// The type `Cons<N, Ns>` represents a list with head `N` and tail `Ns` at the
+/// type level.
 pub struct Cons<N: Nat, Ns: Nats> {
     phantom_n: std::marker::PhantomData<N>,
     phantom_ns: std::marker::PhantomData<Ns>,
